@@ -1,0 +1,13 @@
+# imu/gyroscope_bias:{x:-0.013567, y:0.030827, z:0.007610}
+# imu/accelerometer_bias: {x:-0.107344, y:-0.382891, z:-0.725469}
+
+imu/gyroscope_bias:
+    x:-0.013567
+    y:0.030827
+    z:0.007610
+    
+imu/accelerometer_bias: 
+ x:-0.107344
+ y:-0.382891 
+ z:-0.725469
+

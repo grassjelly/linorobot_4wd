@@ -5,18 +5,21 @@
     <param name="baud" value="57600" />
   </node>
 
+      
  <node pkg="ros_arduino_imu" type="raw_imu_bridge_node" name="raw_imu_bridge" output="screen" respawn="false">
-   <rosparam>
-   imu/gyroscope_bias: {x: -0.013545, y: 0.056887, z: 0.012693 }
-   imu/accelerometer_bias: {x: -0.422578, y: 0.053516, z: -0.310391 }
-    </rosparam>
-   <param name="imu/perform_calibration" value="false" />
+   <!--<rosparam>
+     imu/gyroscope_bias: {x: -0.013011, y: 0.031386, z: 0.006942 },
+   imu/accelerometer_bias: {x: -0.106484, y: -0.385000, z: -0.721719 }
+      </rosparam>-->
+       <rosparam file="$(find linorobot4wd)/param/imu.yaml" command="load" />
+    <param name="imu/perform_calibration" value="false" />
  </node>
+
 
   <node pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter_madgwick" output="screen" respawn="false" >
     <param name="fixed_frame" value="odom" />
   </node>
 
-  <node name="lino_base_node" pkg="linorobot" type="lino_base_node"></node>
+  <node name="lino_base_node" pkg="linorobot4wd" type="lino_base_node_4wd"></node>
 </launch>
 

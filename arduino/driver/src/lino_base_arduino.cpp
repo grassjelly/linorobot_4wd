@@ -281,7 +281,7 @@ void command_callback( const geometry_msgs::Twist& cmd_msg)
   //calculate the wheel's circumference
   double circumference = pi * wheel_diameter;
   //calculate the tangential velocity of the wheel if the robot's rotating where Vt = ω * radius
-  double tangential_vel = angular_vel_mins * (track_width / 2);
+  double tangential_vel = (angular_vel_mins * (track_width / 2))*2;
 
   //calculate and assign desired RPM for each motor
   front_left_motor.required_rpm = (linear_vel_mins / circumference) - (tangential_vel / circumference);
@@ -295,7 +295,17 @@ void drive_robot( int command_front_left, int command_rear_left, int command_fro
   //this functions spins the left and right wheel based on a defined speed in PWM  
   //change left motor direction
   //forward
-  
+      if(command_rear_right >= 0)
+    {
+        digitalWrite( rear_right_motor_in_1 , LOW);
+        digitalWrite( rear_right_motor_in_2 , HIGH);
+    }
+    else
+    {
+        digitalWrite( rear_right_motor_in_1 , HIGH);
+        digitalWrite( rear_right_motor_in_2 , LOW);
+    }
+    analogWrite( rear_right_motor_pwm , abs(command_rear_right));
     if(command_front_left >= 0)
     {
         digitalWrite( front_left_motor_in_1 , HIGH);
@@ -332,17 +342,7 @@ void drive_robot( int command_front_left, int command_rear_left, int command_fro
     }
     analogWrite( front_right_motor_pwm , abs(command_front_right));
         
-    if(command_rear_right >= 0)
-    {
-        digitalWrite( rear_right_motor_in_1 , LOW);
-        digitalWrite( rear_right_motor_in_2 , HIGH);
-    }
-    else
-    {
-        digitalWrite( rear_right_motor_in_1 , HIGH);
-        digitalWrite( rear_right_motor_in_2 , LOW);
-    }
-    analogWrite( rear_right_motor_pwm , abs(command_rear_left));
+
   
   
 //   if (command_left >= 0)

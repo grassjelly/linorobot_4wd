@@ -1,8 +1,8 @@
 <?xml version="1.0.0"?>
 <package>
-  <name>linorobot</name>
+  <name>linorobot4wd</name>
   <version>1.0.0</version>
-  <description>Two wheel differential drive ROS platform</description>
+  <description>4WD differential drive ROS platform</description>
   <maintainer email="jimenojmm@gmail.com">t</maintainer>
   <license>BSD</license>
 

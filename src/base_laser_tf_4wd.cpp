@@ -42,7 +42,7 @@ int main(int argc, char** argv){
   while(n.ok()){
     broadcaster.sendTransform(
       tf::StampedTransform(
-        tf::Transform(tf::Quaternion(0, 0, 0, 1), tf::Vector3(0.065, 0.0, 0.196)),
+        tf::Transform(tf::Quaternion(0, 0, 0, 1), tf::Vector3(0.120, 0.0, 0.230)),
         ros::Time::now(),"base_link", "laser"));
     r.sleep();
   }

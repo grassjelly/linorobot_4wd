@@ -5,6 +5,6 @@
       <param name="frame_id" value="laser"/>
     </node>
     
-    <node name="base_laser_tf_broadcaster_node" pkg="linorobot" type="base_laser_tf"/> 
+    <node name="base_laser_tf_broadcaster_node" pkg="linorobot4wd" type="base_laser_tf_4wd"/> 
     
 </launch>
