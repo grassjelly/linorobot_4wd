@@ -16,9 +16,20 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
+
+catkin_package(
+#  INCLUDE_DIRS include
+#  LIBRARIES linorobot
+#  CATKIN_DEPENDS geometry_msgs ros_arduino_msgs roscpp rospy rosserial_python sensor_msgs std_msgs tf tf
+#  DEPENDS system_lib
+)
 ###########
 ## Build ##
 ###########
+
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+)
 
 add_executable(lino_base_node_4wd src/lino_base_node_4wd.cpp)
 target_link_libraries(lino_base_node_4wd ${catkin_LIBRARIES})
