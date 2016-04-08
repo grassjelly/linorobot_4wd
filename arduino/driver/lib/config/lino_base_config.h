@@ -16,7 +16,7 @@
 #define max_rpm 330 //motor's maximum RPM
 
 //define your robot base's specs here
-#define wheel_diameter 0.135 //wheel's diameter in meters
+#define wheel_diameter 0.142 //wheel's diameter in meters
 #define wheel_width 0.053 //wheel's width in meters
 #define track_width 0.31 // width of the plate you are using
 

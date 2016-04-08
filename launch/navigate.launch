@@ -13,7 +13,7 @@
 
    <node name="base_laser_tf_broadcaster_node" pkg="linorobot4wd" type="base_laser_tf_4wd"/> 
 
-  <arg name="map_file" default="$(find linorobot4wd)/maps/house.yaml"/>
+  <arg name="map_file" default="$(find linorobot4wd)/maps/lab.yaml"/>
   <node pkg="map_server" name="map_server"  type="map_server" args="$(arg map_file)" />
 
   <include file="$(find linorobot4wd)/launch/amcl.launch" />
