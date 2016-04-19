@@ -42,14 +42,14 @@
 #define front_left_motor_in_2 16
 
 #define rear_left_motor_pwm 22
-#define rear_left_motor_in_1 15
-#define rear_left_motor_in_2 14
+#define rear_left_motor_in_1 14
+#define rear_left_motor_in_2 15
 
 #define front_right_motor_pwm 21
 #define front_right_motor_in_1 13
 #define front_right_motor_in_2 12
 
 #define rear_right_motor_pwm 20
-#define rear_right_motor_in_1 11
-#define rear_right_motor_in_2 10
+#define rear_right_motor_in_1 10
+#define rear_right_motor_in_2 11
 #endif

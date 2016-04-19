@@ -79,6 +79,9 @@ typedef struct
   double current_rpm; //current speed of the motor
   double required_rpm;//desired speed of the motor 
   int pwm;//desired speed of the motor mapped to PWM
+  int motor_input1_pin;
+  int motor_input2_pin;
+  int motor_pwm_pin;
 }
 Motor;
 
@@ -100,8 +103,10 @@ void drive_robot( int command_front_left, int command_rear_left, int command_fro
 void check_imu();
 void publish_imu();
 void publish_linear_velocity(unsigned long);
-void read_motor_rpm_(Motor * mot, long current_encoder_ticks, unsigned long dt );
+void read_motor_rpm(Motor * mot, long current_encoder_ticks, unsigned long dt );
 void calculate_pwm(Motor * mot);
+void spin_motor(Motor * mot);
+void initialize_motors();
 
 //callback function prototypes
 void command_callback( const geometry_msgs::Twist& cmd_msg);
@@ -135,23 +140,8 @@ ros::Publisher raw_vel_pub("raw_vel", &raw_vel_msg);
 
 void setup()
 {
-  pinMode( front_left_motor_pwm , OUTPUT);
-  pinMode( front_left_motor_in_1 , OUTPUT);
-  pinMode( front_left_motor_in_2 , OUTPUT);
 
-  pinMode( front_right_motor_pwm , OUTPUT);
-  pinMode( front_right_motor_in_1 , OUTPUT);
-  pinMode( front_right_motor_in_2 , OUTPUT);
-
-  pinMode( rear_left_motor_pwm , OUTPUT);
-  pinMode( rear_left_motor_in_1 , OUTPUT);
-  pinMode( rear_left_motor_in_2 , OUTPUT);
-
-  pinMode( rear_right_motor_pwm , OUTPUT);
-  pinMode( rear_right_motor_in_1 , OUTPUT);
-  pinMode( rear_right_motor_in_2 , OUTPUT);
-  drive_robot(0,0,0,0);
-
+  initialize_motors();
   nh.initNode();
   nh.getHardware()->setBaud(57600);
   nh.subscribe(pid_sub);
@@ -190,17 +180,23 @@ void loop()
     unsigned long current_time = millis();
     unsigned long dt = current_time - previous_control_time;
     //calculate motor's current speed
-    read_motor_rpm_(&front_left_motor, front_left_encoder.read(), dt);
-    read_motor_rpm_(&rear_left_motor, rear_left_encoder.read(), dt);
-    read_motor_rpm_(&front_right_motor, front_right_encoder.read(), dt);
-    read_motor_rpm_(&rear_right_motor, rear_right_encoder.read(), dt);
+    read_motor_rpm(&front_left_motor, front_left_encoder.read(), dt);
+    read_motor_rpm(&rear_left_motor, rear_left_encoder.read(), dt);
+    read_motor_rpm(&front_right_motor, front_right_encoder.read(), dt);
+    read_motor_rpm(&rear_right_motor, rear_right_encoder.read(), dt);
     //calculate how much PWM is needed based on required RPM
     calculate_pwm(&front_left_motor);
     calculate_pwm(&rear_left_motor);    
     calculate_pwm(&front_right_motor);
     calculate_pwm(&rear_right_motor);  
     //move the wheels based on the PWM calculated
-    drive_robot(front_left_motor.pwm, rear_left_motor.pwm, front_right_motor.pwm, rear_right_motor.pwm);
+    // drive_robot(front_left_motor.pwm, rear_left_motor.pwm, front_right_motor.pwm, rear_right_motor.pwm);
+
+    spin_motor(&front_left_motor);
+    spin_motor(&rear_left_motor);    
+    spin_motor(&front_right_motor);
+    spin_motor(&rear_right_motor); 
+    
     previous_control_time = millis();
   }
 
@@ -215,7 +211,6 @@ void loop()
     rear_left_motor.pwm = 0;
     front_right_motor.pwm = 0;    
     rear_right_motor.pwm = 0;
-    drive_robot(front_left_motor.pwm, rear_left_motor.pwm, front_right_motor.pwm, rear_right_motor.pwm);
   }
 
   //this block publishes the IMU data based on defined rate
@@ -262,8 +257,6 @@ void pid_callback( const lino_pid::linoPID& pid)
   Kp = pid.p;
   Kd = pid.d;
   Ki = pid.i;
-  sprintf (buffer, "P: %f D: %f D: %f", pid.p, pid.d, pid.i);
-  nh.loginfo(buffer);
 }
 
 void command_callback( const geometry_msgs::Twist& cmd_msg)
@@ -281,7 +274,9 @@ void command_callback( const geometry_msgs::Twist& cmd_msg)
   //calculate the wheel's circumference
   double circumference = pi * wheel_diameter;
   //calculate the tangential velocity of the wheel if the robot's rotating where Vt = ω * radius
-  double tangential_vel = (angular_vel_mins * (track_width / 2))*2;
+  //this is to compensate to slippage of wheels
+  float wheel_compensate = 2;
+  double tangential_vel = (angular_vel_mins * (track_width / 2)) * wheel_compensate;
 
   //calculate and assign desired RPM for each motor
   front_left_motor.required_rpm = (linear_vel_mins / circumference) - (tangential_vel / circumference);
@@ -290,89 +285,7 @@ void command_callback( const geometry_msgs::Twist& cmd_msg)
   rear_right_motor.required_rpm = front_right_motor.required_rpm;
 }
 
-void drive_robot( int command_front_left, int command_rear_left, int command_front_right, int command_rear_right)
-{
-  //this functions spins the left and right wheel based on a defined speed in PWM  
-  //change left motor direction
-  //forward
-      if(command_rear_right >= 0)
-    {
-        digitalWrite( rear_right_motor_in_1 , LOW);
-        digitalWrite( rear_right_motor_in_2 , HIGH);
-    }
-    else
-    {
-        digitalWrite( rear_right_motor_in_1 , HIGH);
-        digitalWrite( rear_right_motor_in_2 , LOW);
-    }
-    analogWrite( rear_right_motor_pwm , abs(command_rear_right));
-    if(command_front_left >= 0)
-    {
-        digitalWrite( front_left_motor_in_1 , HIGH);
-        digitalWrite( front_left_motor_in_2 , LOW);    
-    }
-    else
-    {
-        digitalWrite( front_left_motor_in_1 , LOW);
-        digitalWrite( front_left_motor_in_2 , HIGH);
-    }
-    analogWrite( front_left_motor_pwm , abs(command_front_left));
-        
-    if(command_rear_left >= 0)
-    {
-        digitalWrite( rear_left_motor_in_1 , LOW);
-        digitalWrite( rear_left_motor_in_2 , HIGH);
-    }
-    else
-    {
-        digitalWrite( rear_left_motor_in_1 , HIGH);
-        digitalWrite( rear_left_motor_in_2 , LOW);
-    }
-    analogWrite( rear_left_motor_pwm , abs(command_rear_left));
-        
-    if(command_front_right >= 0)
-    {
-        digitalWrite( front_right_motor_in_1 , HIGH);
-        digitalWrite( front_right_motor_in_2 , LOW);
-    }
-    else
-    {
-        digitalWrite( front_right_motor_in_1 , LOW);
-        digitalWrite( front_right_motor_in_2 , HIGH);
-    }
-    analogWrite( front_right_motor_pwm , abs(command_front_right));
-        
-
-  
-  
-//   if (command_left >= 0)
-//   {
-//     digitalWrite(left_motor_direction, HIGH);
-//   }
-//   //reverse
-//   else
-//   {
-//     digitalWrite(left_motor_direction, LOW);
-//   }
-//   //spin the motor
-//   analogWrite(left_motor_pwm, abs(command_left));
-  
-//   //change right motor direction
-//   //forward
-//   if (command_right >= 0)
-//   {
-//     digitalWrite(right_motor_direction, HIGH);
-//   }
-//   //reverse
-//   else
-//   {
-//     digitalWrite(right_motor_direction, LOW);
-//   }
-//   //spin the motor
-//   analogWrite(right_motor_pwm, abs(command_right));
-}
-
-void read_motor_rpm_(Motor * mot, long current_encoder_ticks, unsigned long dt )
+void read_motor_rpm(Motor * mot, long current_encoder_ticks, unsigned long dt )
 {
   // this function calculates the motor's RPM based on encoder ticks and delta time
   
@@ -383,27 +296,6 @@ void read_motor_rpm_(Motor * mot, long current_encoder_ticks, unsigned long dt )
   //calculate wheel's speed (RPM)
   mot->current_rpm = (delta_ticks / double(encoder_pulse * gear_ratio)) * dt;
   mot->previous_encoder_ticks = current_encoder_ticks;
-}
-
-void publish_linear_velocity(unsigned long time)
-{
-  // this function publishes the linear speed of the robot
-  
-  //calculate the average RPM 
-  double average_rpm = (front_left_motor.current_rpm + rear_left_motor.current_rpm + front_right_motor.current_rpm + rear_right_motor.current_rpm) / 4; // RPM
-  //convert revolutions per minute to revolutions per second
-  double average_rps = average_rpm / 60; // RPS
-  //calculate linear speed
-  double linear_velocity = (average_rps * (wheel_diameter * pi)); // m/s 
-  
-  //fill in the object 
-  raw_vel_msg.header.stamp = nh.now();
-  raw_vel_msg.vector.x = linear_velocity;
-  raw_vel_msg.vector.y = 0.00;
-  raw_vel_msg.vector.z = double(time) / 1000;
-  //publish raw_vel_msg object to ROS
-  raw_vel_pub.publish(&raw_vel_msg);
-  nh.spinOnce();
 }
 
 void calculate_pwm(Motor * mot)
@@ -425,6 +317,43 @@ void calculate_pwm(Motor * mot)
   new_rpm = constrain(double(mot->pwm) * max_rpm / 255 + pid, -max_rpm, max_rpm);
   //maps rpm to PWM signal, where 255 is the max possible value from an 8 bit controller
   mot->pwm = (new_rpm / max_rpm) * 255;
+}
+
+void spin_motor(Motor * mot)
+{
+    if(mot->pwm >= 0)
+    {
+        digitalWrite(mot->motor_input1_pin , HIGH);
+        digitalWrite(mot->motor_input2_pin , LOW);    
+    }
+    else
+    {
+        digitalWrite(mot->motor_input1_pin , LOW);
+        digitalWrite(mot->motor_input2_pin , HIGH);
+    }
+    analogWrite(mot->motor_pwm_pin , abs(mot->pwm));
+}
+
+
+void publish_linear_velocity(unsigned long time)
+{
+  // this function publishes the linear speed of the robot
+  
+  //calculate the average RPM 
+  double average_rpm = (front_left_motor.current_rpm + rear_left_motor.current_rpm + front_right_motor.current_rpm + rear_right_motor.current_rpm) / 4; // RPM
+  //convert revolutions per minute to revolutions per second
+  double average_rps = average_rpm / 60; // RPS
+  //calculate linear speed
+  double linear_velocity = (average_rps * (wheel_diameter * pi)); // m/s 
+  
+  //fill in the object 
+  raw_vel_msg.header.stamp = nh.now();
+  raw_vel_msg.vector.x = linear_velocity;
+  raw_vel_msg.vector.y = 0.00;
+  raw_vel_msg.vector.z = double(time) / 1000;
+  //publish raw_vel_msg object to ROS
+  raw_vel_pub.publish(&raw_vel_msg);
+  nh.spinOnce();
 }
 
 void check_imu()
@@ -479,4 +408,39 @@ void publish_imu()
   }
   //publish raw_imu_msg object to ROS
   raw_imu_pub.publish(&raw_imu_msg);
+}
+
+void initialize_motors()
+{
+    pinMode( front_left_motor_pwm , OUTPUT);
+    pinMode( front_left_motor_in_1 , OUTPUT);
+    pinMode( front_left_motor_in_2 , OUTPUT);
+
+    pinMode( front_right_motor_pwm , OUTPUT);
+    pinMode( front_right_motor_in_1 , OUTPUT);
+    pinMode( front_right_motor_in_2 , OUTPUT);
+
+    pinMode( rear_left_motor_pwm , OUTPUT);
+    pinMode( rear_left_motor_in_1 , OUTPUT);
+    pinMode( rear_left_motor_in_2 , OUTPUT);
+
+    pinMode( rear_right_motor_pwm , OUTPUT);
+    pinMode( rear_right_motor_in_1 , OUTPUT);
+    pinMode( rear_right_motor_in_2 , OUTPUT);
+  
+    front_left_motor.motor_input1_pin = front_left_motor_in_1;
+    front_left_motor.motor_input2_pin = front_left_motor_in_2;
+    front_left_motor.motor_pwm_pin = front_left_motor_pwm;
+
+    rear_left_motor.motor_input1_pin = rear_left_motor_in_1;
+    rear_left_motor.motor_input2_pin = rear_left_motor_in_2;
+    rear_left_motor.motor_pwm_pin = rear_left_motor_pwm;
+
+    front_right_motor.motor_input1_pin = front_right_motor_in_1;
+    front_right_motor.motor_input2_pin = front_right_motor_in_2;
+    front_right_motor.motor_pwm_pin = front_right_motor_pwm;
+
+    rear_right_motor.motor_input1_pin = rear_right_motor_in_1;
+    rear_right_motor.motor_input2_pin = rear_right_motor_in_2;
+    rear_right_motor.motor_pwm_pin = rear_right_motor_pwm;
 }

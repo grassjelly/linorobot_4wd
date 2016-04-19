@@ -96,18 +96,15 @@ int main(int argc, char** argv){
     
     //calculate angular displacement  θ = ω * t
     double delta_theta = angular_velocity * dtt; //radians
-    //calculate linear displacement in X axis
     double delta_x = (linear_velocity * cos(theta)) * dt; //m
-    //calculate linear displacement in Y axis
     double delta_y = (linear_velocity * sin(theta)) * dt; //m
 
     //calculate current position of the robot 
-    //where (x,y) is summation of linear and angular displacement
     x_pos += delta_x;
     y_pos += delta_y;
     theta += delta_theta;
 
-    //calculate robot's heading in quaternion angle
+    //calculate robot's heading in quarternion angle
     //ROS has a function to calculate yaw in quaternion angle
     geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(theta);
     
