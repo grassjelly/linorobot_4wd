@@ -65,48 +65,34 @@
 
 #define ENCODER_OPTIMIZE_INTERRUPTS
 #include <Encoder.h>
+#include "Motor.h"
 
 #define IMU_PUBLISH_RATE 10 //hz
 #define VEL_PUBLISH_RATE 10 //hz
 #define COMMAND_RATE 10 //hz
 #define DEBUG_RATE 5
 
-typedef struct
-{
-  double previous_pid_error; //last measured pid error
-  double total_pid_error; //overall pid error of the motor
-  long previous_encoder_ticks; //last measured encoder ticks
-  double current_rpm; //current speed of the motor
-  double required_rpm;//desired speed of the motor 
-  int pwm;//desired speed of the motor mapped to PWM
-  int motor_input1_pin;
-  int motor_input2_pin;
-  int motor_pwm_pin;
-}
-Motor;
 
-//create a Motor object
-Motor front_left_motor;
-Motor rear_left_motor;
-Motor front_right_motor;
-Motor rear_right_motor;
+//add your motor objects here
+Motor front_left_motor(front_left_motor_pwm, front_left_motor_in_1, front_left_motor_in_2);
+Motor rear_left_motor(rear_left_motor_pwm, rear_left_motor_in_1, rear_left_motor_in_2);
+Motor front_right_motor(front_right_motor_pwm, front_right_motor_in_1, front_right_motor_in_2);
+Motor rear_right_motor(rear_right_motor_pwm, rear_right_motor_in_1, rear_right_motor_in_2);
 
-//create an Encoder object
+//add your encoder objects here
 Encoder front_left_encoder(FRONT_LEFT_ENCODER_A,FRONT_LEFT_ENCODER_B);
 Encoder front_right_encoder(FRONT_RIGHT_ENCODER_A,FRONT_RIGHT_ENCODER_B);
-
 Encoder rear_left_encoder(REAR_LEFT_ENCODER_A,REAR_LEFT_ENCODER_B);
 Encoder rear_right_encoder(REAR_RIGHT_ENCODER_A,REAR_RIGHT_ENCODER_B);
 
 //function prototypes
-void drive_robot( int command_front_left, int command_rear_left, int command_front_right, int command_rear_right);
 void check_imu();
 void publish_imu();
 void publish_linear_velocity(unsigned long);
-void read_motor_rpm(Motor * mot, long current_encoder_ticks, unsigned long dt );
-void calculate_pwm(Motor * mot);
-void spin_motor(Motor * mot);
-void initialize_motors();
+void get_speed(unsigned long dt);
+void get_pwm();
+void move_base();
+
 
 //callback function prototypes
 void command_callback( const geometry_msgs::Twist& cmd_msg);
@@ -122,9 +108,10 @@ unsigned long previous_debug_time = 0;
 
 bool is_first = true;
 
-float Kp = k_p;
-float Kd = k_d;
-float Ki = k_i;
+float Motor::Kp = k_p;
+float Motor::Kd = k_d;
+float Motor::Ki = k_i;
+
 char buffer[50];
 
 ros::NodeHandle nh;
@@ -140,8 +127,7 @@ ros::Publisher raw_vel_pub("raw_vel", &raw_vel_msg);
 
 void setup()
 {
-
-  initialize_motors();
+//   initialize_motors();
   nh.initNode();
   nh.getHardware()->setBaud(57600);
   nh.subscribe(pid_sub);
@@ -179,24 +165,9 @@ void loop()
   {
     unsigned long current_time = millis();
     unsigned long dt = current_time - previous_control_time;
-    //calculate motor's current speed
-    read_motor_rpm(&front_left_motor, front_left_encoder.read(), dt);
-    read_motor_rpm(&rear_left_motor, rear_left_encoder.read(), dt);
-    read_motor_rpm(&front_right_motor, front_right_encoder.read(), dt);
-    read_motor_rpm(&rear_right_motor, rear_right_encoder.read(), dt);
-    //calculate how much PWM is needed based on required RPM
-    calculate_pwm(&front_left_motor);
-    calculate_pwm(&rear_left_motor);    
-    calculate_pwm(&front_right_motor);
-    calculate_pwm(&rear_right_motor);  
-    //move the wheels based on the PWM calculated
-    // drive_robot(front_left_motor.pwm, rear_left_motor.pwm, front_right_motor.pwm, rear_right_motor.pwm);
-
-    spin_motor(&front_left_motor);
-    spin_motor(&rear_left_motor);    
-    spin_motor(&front_right_motor);
-    spin_motor(&rear_right_motor); 
-    
+    get_speed(dt);
+    get_pwm();
+    move_base();
     previous_control_time = millis();
   }
 
@@ -234,18 +205,17 @@ void loop()
   {
     if ((millis() - previous_debug_time) >= (1000 / DEBUG_RATE))
     {
-      sprintf (buffer, "Encoder FrontLeft: %d", front_left_encoder.read());
+      sprintf (buffer, "Encoder FrontLeft: %ld", front_left_encoder.read());
       nh.loginfo(buffer);
-      sprintf (buffer, "Encoder RearLeft: %d", rear_left_encoder.read());
+      sprintf (buffer, "Encoder RearLeft: %ld", rear_left_encoder.read());
       nh.loginfo(buffer);
-      sprintf (buffer, "Encoder FrontRight: %d", front_right_encoder.read());
+      sprintf (buffer, "Encoder FrontRight: %ld", front_right_encoder.read());
       nh.loginfo(buffer);
-      sprintf (buffer, "Encoder RearRight: %d", rear_right_encoder.read());
+      sprintf (buffer, "Encoder RearRight: %ld", rear_right_encoder.read());
       nh.loginfo(buffer);
       previous_debug_time = millis();
     }
   }
-
   //call all the callbacks waiting to be called
   nh.spinOnce();
 }
@@ -254,9 +224,9 @@ void pid_callback( const lino_pid::linoPID& pid)
 {
   //callback function every time PID constants are received from lino_pid for tuning
   //this callback receives pid object where P,I, and D constants are stored
-  Kp = pid.p;
-  Kd = pid.d;
-  Ki = pid.i;
+    Motor::Kp = pid.p;
+    Motor::Kd = pid.d;
+    Motor::Ki = pid.i;
 }
 
 void command_callback( const geometry_msgs::Twist& cmd_msg)
@@ -279,61 +249,41 @@ void command_callback( const geometry_msgs::Twist& cmd_msg)
   double tangential_vel = (angular_vel_mins * (track_width / 2)) * wheel_compensate;
 
   //calculate and assign desired RPM for each motor
+  //left side
   front_left_motor.required_rpm = (linear_vel_mins / circumference) - (tangential_vel / circumference);
   rear_left_motor.required_rpm = front_left_motor.required_rpm;
+  
+  //right side
   front_right_motor.required_rpm = (linear_vel_mins / circumference) + (tangential_vel / circumference);
   rear_right_motor.required_rpm = front_right_motor.required_rpm;
 }
 
-void read_motor_rpm(Motor * mot, long current_encoder_ticks, unsigned long dt )
+void get_speed(unsigned long dt)
 {
-  // this function calculates the motor's RPM based on encoder ticks and delta time
-  
-  //convert the time from milliseconds to minutes
-  dt = 60000 / dt;
-  //calculate change in number of ticks from the encoder
-  double delta_ticks = current_encoder_ticks - mot->previous_encoder_ticks;
-  //calculate wheel's speed (RPM)
-  mot->current_rpm = (delta_ticks / double(encoder_pulse * gear_ratio)) * dt;
-  mot->previous_encoder_ticks = current_encoder_ticks;
+    //calculate motor's current speed
+    front_left_motor.calculate_rpm(front_left_encoder.read(), dt);
+    rear_left_motor.calculate_rpm(rear_left_encoder.read(), dt);
+    front_right_motor.calculate_rpm(front_right_encoder.read(), dt);
+    rear_right_motor.calculate_rpm(rear_right_encoder.read(), dt);    
 }
 
-void calculate_pwm(Motor * mot)
+void get_pwm()
 {
-  // this function takes a Motor object argument,
-  // implements a PID controller and calculates the PWM required to drive the motor
-  double pid;
-  double new_rpm;
-  double error;
-  
-  //calculate the error ()
-  error = mot->required_rpm - mot->current_rpm;
-  //calculate the overall error
-  mot->total_pid_error += error;
-  //PID controller
-  pid = Kp * error  + Ki * mot->total_pid_error + Kd * (error - mot->previous_pid_error);
-  mot->previous_pid_error = error;
-  //adds the calculated PID value to the required rpm for error compensation
-  new_rpm = constrain(double(mot->pwm) * max_rpm / 255 + pid, -max_rpm, max_rpm);
-  //maps rpm to PWM signal, where 255 is the max possible value from an 8 bit controller
-  mot->pwm = (new_rpm / max_rpm) * 255;
+    //calculate how much PWM is needed based on required RPM and error over time
+    front_left_motor.calculate_pwm();
+    rear_left_motor.calculate_pwm();    
+    front_right_motor.calculate_pwm();
+    rear_right_motor.calculate_pwm();     
 }
 
-void spin_motor(Motor * mot)
+void move_base()
 {
-    if(mot->pwm >= 0)
-    {
-        digitalWrite(mot->motor_input1_pin , HIGH);
-        digitalWrite(mot->motor_input2_pin , LOW);    
-    }
-    else
-    {
-        digitalWrite(mot->motor_input1_pin , LOW);
-        digitalWrite(mot->motor_input2_pin , HIGH);
-    }
-    analogWrite(mot->motor_pwm_pin , abs(mot->pwm));
+    //move the wheels based on calculated pwm
+    front_left_motor.spin();
+    rear_left_motor.spin();    
+    front_right_motor.spin();
+    rear_right_motor.spin();     
 }
-
 
 void publish_linear_velocity(unsigned long time)
 {
@@ -410,37 +360,3 @@ void publish_imu()
   raw_imu_pub.publish(&raw_imu_msg);
 }
 
-void initialize_motors()
-{
-    pinMode( front_left_motor_pwm , OUTPUT);
-    pinMode( front_left_motor_in_1 , OUTPUT);
-    pinMode( front_left_motor_in_2 , OUTPUT);
-
-    pinMode( front_right_motor_pwm , OUTPUT);
-    pinMode( front_right_motor_in_1 , OUTPUT);
-    pinMode( front_right_motor_in_2 , OUTPUT);
-
-    pinMode( rear_left_motor_pwm , OUTPUT);
-    pinMode( rear_left_motor_in_1 , OUTPUT);
-    pinMode( rear_left_motor_in_2 , OUTPUT);
-
-    pinMode( rear_right_motor_pwm , OUTPUT);
-    pinMode( rear_right_motor_in_1 , OUTPUT);
-    pinMode( rear_right_motor_in_2 , OUTPUT);
-  
-    front_left_motor.motor_input1_pin = front_left_motor_in_1;
-    front_left_motor.motor_input2_pin = front_left_motor_in_2;
-    front_left_motor.motor_pwm_pin = front_left_motor_pwm;
-
-    rear_left_motor.motor_input1_pin = rear_left_motor_in_1;
-    rear_left_motor.motor_input2_pin = rear_left_motor_in_2;
-    rear_left_motor.motor_pwm_pin = rear_left_motor_pwm;
-
-    front_right_motor.motor_input1_pin = front_right_motor_in_1;
-    front_right_motor.motor_input2_pin = front_right_motor_in_2;
-    front_right_motor.motor_pwm_pin = front_right_motor_pwm;
-
-    rear_right_motor.motor_input1_pin = rear_right_motor_in_1;
-    rear_right_motor.motor_input2_pin = rear_right_motor_in_2;
-    rear_right_motor.motor_pwm_pin = rear_right_motor_pwm;
-}
