@@ -22,7 +22,7 @@ void Motor::calculate_rpm(long current_encoder_ticks, unsigned long dt)
     //calculate change in number of ticks from the encoder
     double delta_ticks = current_encoder_ticks - _previous_encoder_ticks;
     //calculate wheel's speed (RPM)
-    current_rpm = (delta_ticks / ticks_per_rev) / dtm;
+    current_rpm = (delta_ticks / double(encoder_pulse * gear_ratio))/ dtm;
     _previous_encoder_ticks = current_encoder_ticks;   
 }
 
