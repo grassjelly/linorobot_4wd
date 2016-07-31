@@ -18,11 +18,11 @@ void Motor::calculate_rpm(long current_encoder_ticks, unsigned long dt)
     //this function calculates the motor's RPM based on encoder ticks and delta time
 
     //convert the time from milliseconds to minutes
-    dt = 60000 / dt;
+    double dtm = (double)dt / 60000;
     //calculate change in number of ticks from the encoder
     double delta_ticks = current_encoder_ticks - _previous_encoder_ticks;
     //calculate wheel's speed (RPM)
-    current_rpm = (delta_ticks / double(encoder_pulse * gear_ratio)) * dt;
+    current_rpm = (delta_ticks / ticks_per_rev) / dtm;
     _previous_encoder_ticks = current_encoder_ticks;   
 }
 
