@@ -3,3 +3,5 @@ arduino/driver/devel/
 arduino/driver/.pioenvs
 .AppleDouble
 .pioenvs
+.catkin_workspace
+.sconsign.dblite
