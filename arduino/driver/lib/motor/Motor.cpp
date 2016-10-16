@@ -1,3 +1,12 @@
+/*TODO
+1. return pwm @ calculate_pwm
+2. add a pwm argument for spin
+3. omit dt argument on calculate_rpm and calculate dt within class instead
+4. change current_rpm formula and use ticks_per_rev
+5. create init for variables dependent on lino_base_config
+
+
+*/
 #include "Arduino.h"
 #include "Motor.h"
 #include "lino_base_config.h"
@@ -61,4 +70,3 @@ void Motor::spin()
     }
     analogWrite(_pwm_pin , abs(pwm));
 }
-
