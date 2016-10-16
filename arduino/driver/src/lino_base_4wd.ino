@@ -30,6 +30,12 @@
  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
  POSSIBILITY OF SUCH DAMAGE. 
  
+ TODO:
+ 1. shift calculation of required_rpm from callback to main loop
+ 2. pass motor.calculate_pwm to motor.spin 
+ 3. create a full stop function
+ 4. create inits for linobase_config related variables for Motor class
+ 5. calculate for angular_vel using encoders and publish to ROS (maybe?)
  */
 #if (ARDUINO >= 100)
 #include <Arduino.h>
