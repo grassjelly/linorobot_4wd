@@ -1,18 +1,17 @@
 <launch>
   <!--serial communication between arduino and pc via usb /-->
   <node name="arduino_serial_node" pkg="rosserial_python" type="serial_node.py" output="screen">
-    <param name="port" value="/dev/linobase" />
+    <param name="port" value="/dev/ttyACM0" />
     <param name="baud" value="57600" />
   </node>
 
-      
+
  <node pkg="ros_arduino_imu" type="raw_imu_bridge_node" name="raw_imu_bridge" output="screen" respawn="false">
-   <!--<rosparam>
-     imu/gyroscope_bias: {x: -0.013011, y: 0.031386, z: 0.006942 },
-   imu/accelerometer_bias: {x: -0.106484, y: -0.385000, z: -0.721719 }
-      </rosparam>-->
-       <rosparam file="$(find linorobot4wd)/param/imu.yaml" command="load" />
-    <param name="imu/perform_calibration" value="false" />
+   <rosparam>
+     imu/gyroscope_bias: {x: -0.06945901805349827, y: -0.004075016207495913, z: 0.013822896469332338}
+     imu/accelerometer_bias: {x: -2.3336576559999997, y: 0.290341407, z: -1.3628082819999996}
+     imu/perform_calibration: false
+   </rosparam>
  </node>
 
 
@@ -20,6 +19,5 @@
     <param name="fixed_frame" value="odom" />
   </node>
 
-  <node name="lino_base_node" pkg="linorobot4wd" type="lino_base_node_4wd"></node>
+  <node name="lino_base_node" pkg="linorobot_4wd" type="lino_base_node_4wd"></node>
 </launch>
-
