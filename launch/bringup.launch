@@ -8,8 +8,8 @@
 
  <node pkg="ros_arduino_imu" type="raw_imu_bridge_node" name="raw_imu_bridge" output="screen" respawn="false">
    <rosparam>
-     imu/gyroscope_bias: {x: -0.06945901805349827, y: -0.004075016207495913, z: 0.013822896469332338}
-     imu/accelerometer_bias: {x: -2.3336576559999997, y: 0.290341407, z: -1.3628082819999996}
+     imu/accelerometer_bias: {x: -0.131470156, y: -0.295752343, z: -0.5997614070000008}
+     imu/gyroscope_bias: {x: -0.008431381556216777, y: 0.02036080765564346, z: 0.007239818370848954}
      imu/perform_calibration: false
    </rosparam>
  </node>

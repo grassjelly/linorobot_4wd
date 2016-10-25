@@ -97,8 +97,6 @@ float Motor::wheel_diameter = WHEEL_DIAMETER;
 
 double required_angular_vel = 0;
 double required_linear_vel = 0;
-unsigned long lastMilli = 0;
-unsigned long lastMilliPub = 0;
 unsigned long previous_command_time = 0;
 unsigned long previous_control_time = 0;
 unsigned long publish_vel_time = 0;
@@ -113,8 +111,6 @@ char buffer[50];
 void check_imu();
 void publish_imu();
 void publish_linear_velocity(unsigned long);
-void get_speed();
-void get_pwm();
 void move_base();
 
 //callback function prototypes
@@ -175,7 +171,6 @@ void loop()
     //calculate the wheel's circumference
     double circumference = PI * WHEEL_DIAMETER;
     //calculate the tangential velocity of the wheel if the robot's rotating where Vt = ω * radius
-    //this is to compensate to slippage of wheels
     double tangential_vel = angular_vel_mins * (TRACK_WIDTH / 2);
 
     //calculate and assign desired RPM for each motor
@@ -279,9 +274,9 @@ void stop_base()
 void publish_linear_velocity()
 {
   // this function publishes the linear speed of the robot
-  unsigned long vel_dt = millis() - publish_vel_time;
 
   //calculate the average RPM
+
   double average_rpm = (motor1.current_rpm + motor3.current_rpm + motor2.current_rpm + motor4.current_rpm) / 4; // RPM
   //convert revolutions per minute to revolutions per second
   double average_rps = average_rpm / 60; // RPS
@@ -292,7 +287,8 @@ void publish_linear_velocity()
   raw_vel_msg.header.stamp = nh.now();
   raw_vel_msg.vector.x = linear_velocity;
   raw_vel_msg.vector.y = 0.00;
-  raw_vel_msg.vector.z = double(vel_dt) / 1000;
+  raw_vel_msg.vector.z = 0.00;
+  // raw_vel_msg.vector.z = double(vel_dt) / 1000;
   //publish raw_vel_msg object to ROS
   raw_vel_pub.publish(&raw_vel_msg);
   nh.spinOnce();

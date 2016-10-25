@@ -16,7 +16,6 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
-
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES linorobot
