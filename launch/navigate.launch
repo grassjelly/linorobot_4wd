@@ -1,7 +1,7 @@
 <launch>
   <include file="$(find linorobot_4wd)/launch/laser.launch" />
 
-  <arg name="map_file" default="$(find linorobot_4wd)/maps/lab.yaml"/>
+  <arg name="map_file" default="$(find linorobot_4wd)/maps/house.yaml"/>
   <node pkg="map_server" name="map_server"  type="map_server" args="$(arg map_file)" />
 
   <include file="$(find linorobot_4wd)/launch/amcl.launch" />
