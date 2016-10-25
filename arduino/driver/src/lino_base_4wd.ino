@@ -174,12 +174,15 @@ void loop()
     //calculate the tangential velocity of the wheel if the robot's rotating where Vt = ω * radius
     double tangential_vel = angular_vel_mins * (TRACK_WIDTH / 2);
 
+    double vx = linear_vel_mins / circumference;
+    double tvx = tangential_vel / circumference;
+
     //calculate and assign desired RPM for each motor
     //left side
-    motor1.required_rpm = (linear_vel_mins / circumference) - (tangential_vel / circumference);
+    motor1.required_rpm = vx - tvx;
     motor3.required_rpm = motor1.required_rpm;
     //right side
-    motor2.required_rpm = (linear_vel_mins / circumference) + (tangential_vel / circumference);
+    motor2.required_rpm = vx + tvx;
     motor4.required_rpm = motor2.required_rpm;
   }
 
@@ -277,7 +280,6 @@ void publish_linear_velocity()
   // this function publishes the linear speed of the robot
 
   //calculate the average RPM
-
   double average_rpm = (motor1.current_rpm + motor3.current_rpm + motor2.current_rpm + motor4.current_rpm) / 4; // RPM
   //convert revolutions per minute to revolutions per second
   double average_rps = average_rpm / 60; // RPS
