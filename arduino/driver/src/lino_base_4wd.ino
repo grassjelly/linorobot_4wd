@@ -112,6 +112,7 @@ void check_imu();
 void publish_imu();
 void publish_linear_velocity(unsigned long);
 void move_base();
+void stop_base();
 
 //callback function prototypes
 void command_callback( const geometry_msgs::Twist& cmd_msg);
