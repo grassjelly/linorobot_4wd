@@ -174,15 +174,12 @@ void loop()
     //calculate the tangential velocity of the wheel if the robot's rotating where Vt = ω * radius
     double tangential_vel = angular_vel_mins * (TRACK_WIDTH / 2);
 
-    double vx = linear_vel_mins / circumference;
-    double tvx = tangential_vel / circumference;
-
     //calculate and assign desired RPM for each motor
     //left side
-    motor1.required_rpm = vx - tvx;
+    motor1.required_rpm = (linear_vel_mins / circumference) - (tangential_vel / circumference);
     motor3.required_rpm = motor1.required_rpm;
     //right side
-    motor2.required_rpm = vx + tvx;
+    motor2.required_rpm = (linear_vel_mins / circumference) + (tangential_vel / circumference);
     motor4.required_rpm = motor2.required_rpm;
   }
 
