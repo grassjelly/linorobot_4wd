@@ -212,9 +212,7 @@ void command_callback( const geometry_msgs::Twist& cmd_msg)
 void do_kinematics()
 {
   //convert m/s to m/min
-  double linear_vel_x_mins = required_linear_vel_x * 60;
-  double linear_vel_y_mins = required_linear_vel_y * 60;
-
+  double linear_vel_mins = required_linear_vel * 60;
   //convert rad/s to rad/min
   double angular_vel_mins = required_angular_vel * 60;
   //calculate the wheel's circumference
@@ -222,38 +220,13 @@ void do_kinematics()
   //calculate the tangential velocity of the wheel if the robot's rotating where Vt = ω * radius
   double tangential_vel = angular_vel_mins * (TRACK_WIDTH / 2);
 
-  double x_rpm = linear_vel_x_mins / circumference;
-  double y_rpm = linear_vel_y_mins / circumference;
-  double tan_rpm = tangential_vel / circumference;
-
   //calculate and assign desired RPM for each motor
-  if(required_linear_vel_y == 0)
-  {
-    //left side
-    motor1.required_rpm = x_rpm - tan_rpm;
-    motor3.required_rpm = motor1.required_rpm;
-    //right side
-    motor2.required_rpm = x_rpm + tan_rpm;
-    motor4.required_rpm = motor2.required_rpm;
-  }
-  else if (required_linear_vel_x == 0)
-  {
-    //left side
-    motor1.required_rpm = -y_rpm;
-    motor3.required_rpm =  y_rpm;
-    //right side
-    motor2.required_rpm = motor3.required_rpm;
-    motor4.required_rpm = motor1.required_rpm;
-  }
-  else
-  {
-    //left_side
-    motor1.required_rpm =  x_rpm - y_rpm;
-    motor3.required_rpm =  x_rpm + y_rpm;
-    //right side
-    motor2.required_rpm =  motor3.required_rpm;
-    motor4.required_rpm =  motor1.required_rpm ;
-  }
+  //left side
+  motor1.required_rpm = (linear_vel_mins / circumference) - (tangential_vel / circumference);
+  motor3.required_rpm = motor1.required_rpm;
+  //right side
+  motor2.required_rpm = (linear_vel_mins / circumference) + (tangential_vel / circumference);
+  motor4.required_rpm = motor2.required_rpm;
 }
 
 void move_base()
