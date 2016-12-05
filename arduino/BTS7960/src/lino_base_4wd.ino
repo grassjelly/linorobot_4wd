@@ -64,13 +64,13 @@
 #define COMMAND_RATE 10 //hz
 #define DEBUG_RATE 5
 
-//left side motors
-Motor motor1(MOTOR1_PWM, MOTOR1_IN_A, MOTOR1_IN_B); //front
-Motor motor3(MOTOR3_PWM, MOTOR3_IN_A, MOTOR3_IN_B);// rear
+// left side motors
+Motor motor1(MOTOR1_IN_A, MOTOR1_IN_B); // front
+Motor motor3(MOTOR3_IN_A, MOTOR3_IN_B); // rear
 
-//right side motors
-Motor motor2(MOTOR2_PWM, MOTOR2_IN_A, MOTOR2_IN_B); // front
-Motor motor4(MOTOR4_PWM, MOTOR4_IN_A, MOTOR4_IN_B); // frear
+// right side motors
+Motor motor2(MOTOR2_IN_A, MOTOR2_IN_B); // front
+Motor motor4(MOTOR4_IN_A, MOTOR4_IN_B); // frear
 
 //left side encoders
 Encoder motor1_encoder(MOTOR1_ENCODER_A,MOTOR1_ENCODER_B); //front
